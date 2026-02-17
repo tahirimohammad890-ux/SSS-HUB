@@ -9,7 +9,7 @@ local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
 local Player = Players.LocalPlayer
-a
+
 -- Safe character wait - don't force anything
 local function waitForCharacter()
     local char = Player.Character
@@ -28,7 +28,7 @@ if not getgenv then
     getgenv = function() return _G end
 end
 
-local ConfigFileName = "SSS_DUELS_Config.json"
+local ConfigFileName = "22s_DUELS_Config.json"
 
 local Enabled = {
     SpeedBoost = false,
@@ -1313,7 +1313,7 @@ local titleLabel = Instance.new("TextLabel", header)
 titleLabel.Size = UDim2.new(1, 0, 0, 32 * guiScale)
 titleLabel.Position = UDim2.new(0, 0, 0, 10 * guiScale)
 titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "sss DUELS"
+titleLabel.Text = "22S DUELS"
 titleLabel.TextColor3 = C.text
 titleLabel.Font = Enum.Font.GothamBlack
 titleLabel.TextSize = 28 * guiScale
@@ -1324,8 +1324,7 @@ local subtitleLabel = Instance.new("TextLabel", header)
 subtitleLabel.Size = UDim2.new(1, 0, 0, 24 * guiScale)
 subtitleLabel.Position = UDim2.new(0, 0, 0, 40 * guiScale)
 subtitleLabel.BackgroundTransparency = 1
-subtitleLabel.Text = "https://discord.gg/s2Gc9J9JqQ
-Made By Thunderkree"
+subtitleLabel.Text = "discord.gg/22s"
 subtitleLabel.TextColor3 = C.purpleLight
 subtitleLabel.Font = Enum.Font.GothamBold
 subtitleLabel.TextSize = 16 * guiScale
