@@ -28,7 +28,7 @@ if not getgenv then
     getgenv = function() return _G end
 end
 
-local ConfigFileName = "22s_DUELS_Config.json"
+local ConfigFileName = "sss_DUELS_Config.json"
 
 local Enabled = {
     SpeedBoost = false,
@@ -822,7 +822,7 @@ local progressConnection = nil
 local StealData = {}
 
 -- Discord text for progress bar
-local DISCORD_TEXT = "discord.gg/22s"
+local DISCORD_TEXT = "https://discord.gg/VHabSxCT"
 
 local function getDiscordProgress(percent)
     local totalChars = #DISCORD_TEXT
