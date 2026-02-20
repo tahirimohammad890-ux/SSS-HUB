@@ -28,7 +28,7 @@ if not getgenv then
     getgenv = function() return _G end
 end
 
-local ConfigFileName = "sss_DUELS_Config.json"
+local ConfigFileName = "SSS_HUB_Config.json"
 
 local Enabled = {
     SpeedBoost = false,
@@ -70,7 +70,7 @@ local KEYBINDS = {
     AUTORIGHT = Enum.KeyCode.C
 }
 
--- Load Config FIRST before anything else
+-- Load Config
 local configLoaded = false
 pcall(function()
     if readfile and isfile and isfile(ConfigFileName) then
@@ -145,7 +145,6 @@ local function INSTANT_NUKE(target)
         BALLOON_REMOTE:FireServer(ADMIN_KEY, target, p)
     end
 end
-
 local function getNearestPlayer()
     local c = Player.Character
     if not c then return nil end
@@ -248,8 +247,6 @@ local function stopSpinBot()
     end
 end
 
--- ================================================================
--- ================================================================
 local AutoWalkEnabled = false
 local AutoRightEnabled = false
 
@@ -263,7 +260,7 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- Bat Aimbot (no radius limit, NO auto swing, purple line, smooth movement)
+-- Bat Aimbot
 local aimbotTarget = nil
 
 local function findNearestEnemy(myHRP)
@@ -299,13 +296,11 @@ local function startBatAimbot()
         local hum = c:FindFirstChildOfClass("Humanoid")
         if not h or not hum then return end
         
-        -- Equip bat if not equipped (no swinging)
         local bat = findBat()
         if bat and bat.Parent ~= c then
             hum:EquipTool(bat)
         end
         
-        -- Find target
         local target, dist, torso = findNearestEnemy(h)
         aimbotTarget = torso or target
         
@@ -313,7 +308,7 @@ local function startBatAimbot()
             local dir = (torso.Position - h.Position)
             local flatDir = Vector3.new(dir.X, 0, dir.Z)
             local flatDist = flatDir.Magnitude
-            local spd = 55 -- Fixed aimbot speed
+            local spd = 55
             
             if flatDist > 1.5 then
                 local moveDir = flatDir.Unit
@@ -334,8 +329,6 @@ local function stopBatAimbot()
     aimbotTarget = nil
 end
 
-
-
 -- Galaxy Mode
 local galaxyVectorForce = nil
 local galaxyAttachment = nil
@@ -345,7 +338,6 @@ local lastHopTime = 0
 local spaceHeld = false
 local originalJumpPower = 50
 
--- Capture original jump power safely when character is ready
 local function captureJumpPower()
     local c = Player.Character
     if c then
@@ -356,13 +348,11 @@ local function captureJumpPower()
     end
 end
 
--- Capture on current character
 task.spawn(function()
     task.wait(1)
     captureJumpPower()
 end)
 
--- Recapture when character respawns
 Player.CharacterAdded:Connect(function(char)
     task.wait(1)
     captureJumpPower()
@@ -386,7 +376,6 @@ local function setupGalaxyForce()
         galaxyVectorForce.Parent = h
     end)
 end
-
 local function updateGalaxyForce()
     if not galaxyEnabled or not galaxyVectorForce then return end
     local c = Player.Character
@@ -469,54 +458,10 @@ local function getMovementDirection()
     return hum and hum.MoveDirection or Vector3.zero
 end
 
-local function isOnEnemyPlot()
-    local character = Player.Character
-    if not character then return false end
-    local hrp = character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return false end
-    local playerPos = hrp.Position
-    local plots = workspace:FindFirstChild("Plots")
-    if not plots then return false end
-    
-    for _, plot in ipairs(plots:GetChildren()) do
-        local isMyPlot = false
-        local sign = plot:FindFirstChild("PlotSign")
-        if sign then
-            local yourBase = sign:FindFirstChild("YourBase")
-            if yourBase and yourBase:IsA("BillboardGui") then 
-                isMyPlot = yourBase.Enabled == true 
-            end
-        end
-        
-        if not isMyPlot then
-            local plotPart = plot:FindFirstChild("Plot") or plot:FindFirstChildWhichIsA("BasePart")
-            if plotPart and plotPart:IsA("BasePart") then
-                local plotPos, plotSize = plotPart.Position, plotPart.Size
-                if math.abs(playerPos.X - plotPos.X) <= plotSize.X/2 + 5 and 
-                   math.abs(playerPos.Z - plotPos.Z) <= plotSize.Z/2 + 5 then 
-                    return true 
-                end
-            end
-            
-            local podiums = plot:FindFirstChild("AnimalPodiums")
-            if podiums then
-                for _, podium in ipairs(podiums:GetChildren()) do
-                    local base = podium:FindFirstChild("Base")
-                    if base then
-                        local spawn = base:FindFirstChild("Spawn")
-                        if spawn and (spawn.Position - playerPos).Magnitude <= 25 then 
-                            return true 
-                        end
-                    end
-                end
-            end
-        end
-    end
-    return false
-end
-
--- Auto walk/right destination coordinates (forward declared for speed boost check)
+-- Auto walk coordinates
+local POSITION_1 = Vector3.new(-476.48, -6.28, 92.73)
 local POSITION_2 = Vector3.new(-483.12, -4.95, 94.80)
+local POSITION_R1 = Vector3.new(-476.16, -6.52, 25.62)
 local POSITION_R2 = Vector3.new(-483.04, -5.09, 23.14)
 local autoWalkPhase = 1
 local autoRightPhase = 1
@@ -545,60 +490,8 @@ local function stopSpeedBoost()
     end
 end
 
--- ============================================
--- AUTO LEFT / AUTO RIGHT COORDINATE ESP
--- Small precise markers at exact positions
--- ============================================
-local coordESPFolder = Instance.new("Folder", workspace)
-coordESPFolder.Name = "22s_CoordESP"
-
-local function createCoordMarker(position, labelText, color)
-    -- Small dot at exact position
-    local dot = Instance.new("Part", coordESPFolder)
-    dot.Name = "CoordMarker_" .. labelText
-    dot.Anchored = true
-    dot.CanCollide = false
-    dot.CastShadow = false
-    dot.Material = Enum.Material.Neon
-    dot.Color = color
-    dot.Shape = Enum.PartType.Ball
-    dot.Size = Vector3.new(1, 1, 1)
-    dot.Position = position
-    dot.Transparency = 0.2
-
-    -- Small billboard label
-    local bb = Instance.new("BillboardGui", dot)
-    bb.AlwaysOnTop = true
-    bb.Size = UDim2.new(0, 100, 0, 20)
-    bb.StudsOffset = Vector3.new(0, 2, 0)
-    bb.MaxDistance = 300
-
-    local text = Instance.new("TextLabel", bb)
-    text.Size = UDim2.new(1, 0, 1, 0)
-    text.BackgroundTransparency = 1
-    text.Text = labelText
-    text.TextColor3 = color
-    text.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-    text.TextStrokeTransparency = 0
-    text.Font = Enum.Font.GothamBold
-    text.TextSize = 12
-    text.TextScaled = false
-
-    return dot
-end
-
--- Create markers at exact coordinates
-createCoordMarker(Vector3.new(-476.48, -6.28, 92.73), "L1", Color3.fromRGB(100, 150, 255))
-createCoordMarker(Vector3.new(-483.12, -4.95, 94.80), "L END", Color3.fromRGB(60, 130, 255))
-createCoordMarker(Vector3.new(-476.16, -6.52, 25.62), "R1", Color3.fromRGB(100, 220, 180))
-createCoordMarker(Vector3.new(-483.04, -5.09, 23.14), "R END", Color3.fromRGB(50, 200, 150))
-
 -- Auto Walk
 local autoWalkConnection = nil
-local POSITION_1 = Vector3.new(-476.48, -6.28, 92.73)
-
-local autoRightConnection = nil
-local POSITION_R1 = Vector3.new(-476.16, -6.52, 25.62)
 
 local function faceSouth()
     local c = Player.Character
@@ -606,13 +499,6 @@ local function faceSouth()
     local h = c:FindFirstChild("HumanoidRootPart")
     if not h then return end
     h.CFrame = CFrame.new(h.Position) * CFrame.Angles(0, 0, 0)
-    local camera = workspace.CurrentCamera
-    if camera then
-        local camDistance = 12
-        local camHeight = 5
-        local charPos = h.Position
-        camera.CFrame = CFrame.new(charPos.X, charPos.Y + camHeight, charPos.Z - camDistance) * CFrame.Angles(math.rad(-15), 0, 0)
-    end
 end
 
 local function faceNorth()
@@ -621,12 +507,6 @@ local function faceNorth()
     local h = c:FindFirstChild("HumanoidRootPart")
     if not h then return end
     h.CFrame = CFrame.new(h.Position) * CFrame.Angles(0, math.rad(180), 0)
-    local camera = workspace.CurrentCamera
-    if camera then
-        local camDistance = 12
-        local charPos = h.Position
-        camera.CFrame = CFrame.new(charPos.X, charPos.Y + 2, charPos.Z + camDistance) * CFrame.Angles(0, math.rad(180), 0)
-    end
 end
 
 local function startAutoWalk()
@@ -646,7 +526,6 @@ local function startAutoWalk()
             local dist = (targetPos - h.Position).Magnitude
             if dist < 1 then
                 autoWalkPhase = 2
-                -- Immediately start moving to coord 2 this same frame
                 local dir = (POSITION_2 - h.Position)
                 local moveDir = Vector3.new(dir.X, 0, dir.Z).Unit
                 hum:Move(moveDir, false)
@@ -666,9 +545,6 @@ local function startAutoWalk()
                 h.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                 AutoWalkEnabled = false
                 Enabled.AutoWalkEnabled = false
-
-                if _G.setAutoLeftVisual then _G.setAutoLeftVisual(false) end
-                if VisualSetters and VisualSetters.AutoWalkEnabled then VisualSetters.AutoWalkEnabled(false, true) end
                 if autoWalkConnection then autoWalkConnection:Disconnect() autoWalkConnection = nil end
                 faceSouth()
                 return
@@ -690,6 +566,7 @@ local function stopAutoWalk()
         if hum then hum:Move(Vector3.zero, false) end
     end
 end
+local autoRightConnection = nil
 
 local function startAutoRight()
     if autoRightConnection then autoRightConnection:Disconnect() end
@@ -727,9 +604,6 @@ local function startAutoRight()
                 h.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                 AutoRightEnabled = false
                 Enabled.AutoRightEnabled = false
-
-                if _G.setAutoRightVisual then _G.setAutoRightVisual(false) end
-                if VisualSetters and VisualSetters.AutoRightEnabled then VisualSetters.AutoRightEnabled(false, true) end
                 if autoRightConnection then autoRightConnection:Disconnect() autoRightConnection = nil end
                 faceNorth()
                 return
@@ -821,12 +695,10 @@ local stealStartTime = nil
 local progressConnection = nil
 local StealData = {}
 
--- Discord text for progress bar
-local DISCORD_TEXT = "https://discord.gg/VHabSxCT"
+local DISCORD_TEXT = "discord.gg/22s"
 
 local function getDiscordProgress(percent)
     local totalChars = #DISCORD_TEXT
-    -- Speed up the text reveal - complete by 70% progress so it's visible longer
     local adjustedPercent = math.min(percent * 1.5, 100)
     local charsToShow = math.floor((adjustedPercent / 100) * totalChars)
     return string.sub(DISCORD_TEXT, 1, charsToShow)
@@ -928,7 +800,6 @@ local function executeSteal(prompt, name)
         isStealing = false
     end)
 end
-
 local function startAutoSteal()
     if Connections.autoSteal then return end
     Connections.autoSteal = RunService.Heartbeat:Connect(function()
@@ -1103,41 +974,29 @@ local function disableGalaxySkyBright()
 end
 
 -- ============================================
--- GUI - CLEAN NO BOXES - MORE BLACK
+-- GUI - ORANGE THEME WITH TYPING ANIMATION
 -- ============================================
 local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 local guiScale = isMobile and 0.4 or 1
 
 local C = {
-    bg = Color3.fromRGB(2, 2, 4),
-    purple = Color3.fromRGB(60, 130, 255),
-    purpleLight = Color3.fromRGB(100, 170, 255),
-    purpleDark = Color3.fromRGB(30, 80, 200),
-    purpleGlow = Color3.fromRGB(80, 150, 255),
-    accent = Color3.fromRGB(60, 130, 255),
-    text = Color3.fromRGB(255, 255, 255),
-    textDim = Color3.fromRGB(100, 170, 255),
-    success = Color3.fromRGB(34, 197, 94),
-    danger = Color3.fromRGB(239, 68, 68),
-    border = Color3.fromRGB(30, 60, 120)
+    bg = Color3.fromRGB(2, 2, 4),      -- Black background
+    orange = Color3.fromRGB(255, 140, 0),    -- Bright orange
+    orangeLight = Color3.fromRGB(255, 170, 60), -- Light orange
+    orangeDark = Color3.fromRGB(200, 100, 0),  -- Dark orange
+    orangeGlow = Color3.fromRGB(255, 160, 30), -- Orange glow
+    accent = Color3.fromRGB(255, 140, 0),     -- Orange accent
+    text = Color3.fromRGB(255, 255, 255),     -- White text
+    textDim = Color3.fromRGB(200, 200, 200),  -- Dim white
+    success = Color3.fromRGB(34, 197, 94),    -- Green
+    danger = Color3.fromRGB(239, 68, 68),     -- Red
+    border = Color3.fromRGB(255, 140, 0)      -- Orange border
 }
 
 local sg = Instance.new("ScreenGui")
-sg.Name = "22S_BLUE"
+sg.Name = "SSS_HUB"
 sg.ResetOnSpawn = false
 sg.Parent = Player.PlayerGui
-
-local function playSound(id, vol, spd)
-    pcall(function()
-        local s = Instance.new("Sound", SoundService)
-        s.SoundId = id
-        s.Volume = vol or 0.3
-        s.PlaybackSpeed = spd or 1
-        s:Play()
-        game:GetService("Debris"):AddItem(s, 1)
-    end)
-end
-
 -- Progress Bar
 local progressBar = Instance.new("Frame", sg)
 progressBar.Size = UDim2.new(0, 420 * guiScale, 0, 56 * guiScale)
@@ -1151,9 +1010,9 @@ local pStroke = Instance.new("UIStroke", progressBar)
 pStroke.Thickness = 2
 local pGrad = Instance.new("UIGradient", pStroke)
 pGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(100, 170, 255)),
+    ColorSequenceKeypoint.new(0, C.orangeLight),
     ColorSequenceKeypoint.new(0.3, Color3.fromRGB(0, 0, 0)),
-    ColorSequenceKeypoint.new(0.6, Color3.fromRGB(60, 130, 255)),
+    ColorSequenceKeypoint.new(0.6, C.orange),
     ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
 })
 
@@ -1165,31 +1024,6 @@ task.spawn(function()
         task.wait(0.02)
     end
 end)
-
-for i = 1, 12 do
-    local ball = Instance.new("Frame", progressBar)
-    ball.Size = UDim2.new(0, math.random(2, 3), 0, math.random(2, 3))
-    ball.Position = UDim2.new(math.random(3, 97) / 100, 0, math.random(15, 85) / 100, 0)
-    ball.BackgroundColor3 = Color3.fromRGB(100, 170, 255)
-    ball.BackgroundTransparency = math.random(20, 50) / 100
-    ball.BorderSizePixel = 0
-    ball.ZIndex = 1
-    Instance.new("UICorner", ball).CornerRadius = UDim.new(1, 0)
-    
-    task.spawn(function()
-        local startX = ball.Position.X.Scale
-        local startY = ball.Position.Y.Scale
-        local phase = math.random() * math.pi * 2
-        while ball.Parent do
-            local t = tick() + phase
-            local newX = startX + math.sin(t * (0.5 + i * 0.1)) * 0.03
-            local newY = startY + math.cos(t * (0.4 + i * 0.08)) * 0.05
-            ball.Position = UDim2.new(math.clamp(newX, 0.02, 0.98), 0, math.clamp(newY, 0.1, 0.9), 0)
-            ball.BackgroundTransparency = 0.3 + math.sin(t * 2) * 0.2
-            task.wait(0.03)
-        end
-    end)
-end
 
 ProgressLabel = Instance.new("TextLabel", progressBar)
 ProgressLabel.Size = UDim2.new(0.35, 0, 0.5, 0)
@@ -1206,7 +1040,7 @@ ProgressPercentLabel = Instance.new("TextLabel", progressBar)
 ProgressPercentLabel.Size = UDim2.new(1, 0, 0.5, 0)
 ProgressPercentLabel.BackgroundTransparency = 1
 ProgressPercentLabel.Text = ""
-ProgressPercentLabel.TextColor3 = C.purpleLight
+ProgressPercentLabel.TextColor3 = C.orangeLight
 ProgressPercentLabel.Font = Enum.Font.GothamBlack
 ProgressPercentLabel.TextSize = 18 * guiScale
 ProgressPercentLabel.TextXAlignment = Enum.TextXAlignment.Center
@@ -1217,7 +1051,7 @@ RadiusInput.Size = UDim2.new(0, 40 * guiScale, 0, 22 * guiScale)
 RadiusInput.Position = UDim2.new(1, -50 * guiScale, 0, 2 * guiScale)
 RadiusInput.BackgroundColor3 = Color3.fromRGB(5, 5, 8)
 RadiusInput.Text = tostring(Values.STEAL_RADIUS)
-RadiusInput.TextColor3 = C.purpleLight
+RadiusInput.TextColor3 = C.orangeLight
 RadiusInput.Font = Enum.Font.GothamBold
 RadiusInput.TextSize = 12 * guiScale
 RadiusInput.ZIndex = 3
@@ -1240,7 +1074,7 @@ Instance.new("UICorner", pTrack).CornerRadius = UDim.new(1, 0)
 
 ProgressBarFill = Instance.new("Frame", pTrack)
 ProgressBarFill.Size = UDim2.new(0, 0, 1, 0)
-ProgressBarFill.BackgroundColor3 = C.purple
+ProgressBarFill.BackgroundColor3 = C.orange
 ProgressBarFill.ZIndex = 2
 Instance.new("UICorner", ProgressBarFill).CornerRadius = UDim.new(1, 0)
 
@@ -1260,11 +1094,11 @@ local mainStroke = Instance.new("UIStroke", main)
 mainStroke.Thickness = 2
 local strokeGrad = Instance.new("UIGradient", mainStroke)
 strokeGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(100, 170, 255)),
+    ColorSequenceKeypoint.new(0, C.orangeLight),
     ColorSequenceKeypoint.new(0.2, Color3.fromRGB(0, 0, 0)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(60, 130, 255)),
+    ColorSequenceKeypoint.new(0.5, C.orange),
     ColorSequenceKeypoint.new(0.8, Color3.fromRGB(0, 0, 0)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(100, 170, 255))
+    ColorSequenceKeypoint.new(1, C.orangeLight)
 })
 
 task.spawn(function()
@@ -1276,56 +1110,54 @@ task.spawn(function()
     end
 end)
 
-for i = 1, 60 do
-    local ball = Instance.new("Frame", main)
-    ball.Size = UDim2.new(0, math.random(2, 4), 0, math.random(2, 4))
-    ball.Position = UDim2.new(math.random(2, 98) / 100, 0, math.random(2, 98) / 100, 0)
-    ball.BackgroundColor3 = Color3.fromRGB(100, 170, 255)
-    ball.BackgroundTransparency = math.random(10, 40) / 100
-    ball.BorderSizePixel = 0
-    ball.ZIndex = 2
-    Instance.new("UICorner", ball).CornerRadius = UDim.new(1, 0)
-    
-    task.spawn(function()
-        local startX = ball.Position.X.Scale
-        local startY = ball.Position.Y.Scale
-        local phase = math.random() * math.pi * 2
-        local speedMult = 0.3 + math.random() * 0.4
-        while ball.Parent do
-            local t = tick() + phase
-            local newX = startX + math.sin(t * speedMult) * 0.02
-            local newY = startY + math.cos(t * speedMult * 0.8) * 0.015
-            ball.Position = UDim2.new(math.clamp(newX, 0.01, 0.99), 0, math.clamp(newY, 0.01, 0.99), 0)
-            ball.BackgroundTransparency = 0.2 + math.sin(t * 1.5 + phase) * 0.25
-            task.wait(0.03)
-        end
-    end)
-end
-
--- Header
+-- Header with typing animation
 local header = Instance.new("Frame", main)
-header.Size = UDim2.new(1, 0, 0, 70 * guiScale)
+header.Size = UDim2.new(1, 0, 0, 80 * guiScale)
 header.BackgroundTransparency = 1
 header.BorderSizePixel = 0
 header.ZIndex = 0
 
 local titleLabel = Instance.new("TextLabel", header)
-titleLabel.Size = UDim2.new(1, 0, 0, 32 * guiScale)
+titleLabel.Size = UDim2.new(1, 0, 0, 40 * guiScale)
 titleLabel.Position = UDim2.new(0, 0, 0, 10 * guiScale)
 titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "22S DUELS"
+titleLabel.Text = ""
 titleLabel.TextColor3 = C.text
 titleLabel.Font = Enum.Font.GothamBlack
-titleLabel.TextSize = 28 * guiScale
+titleLabel.TextSize = 32 * guiScale
 titleLabel.TextXAlignment = Enum.TextXAlignment.Center
 titleLabel.ZIndex = 5
 
+-- Typing animation for "SSS HUB"
+local fullText = "SSS HUB"
+local typingSpeed = 0.15
+
+task.spawn(function()
+    while titleLabel and titleLabel.Parent do
+        -- Type out
+        for i = 1, #fullText do
+            titleLabel.Text = string.sub(fullText, 1, i)
+            titleLabel.TextTransparency = 0
+            task.wait(typingSpeed)
+        end
+        task.wait(1)
+        -- Fade out
+        for i = 0, 1, 0.1 do
+            titleLabel.TextTransparency = i
+            task.wait(0.05)
+        end
+        titleLabel.Text = ""
+        titleLabel.TextTransparency = 0
+        task.wait(0.5)
+    end
+end)
+
 local subtitleLabel = Instance.new("TextLabel", header)
 subtitleLabel.Size = UDim2.new(1, 0, 0, 24 * guiScale)
-subtitleLabel.Position = UDim2.new(0, 0, 0, 40 * guiScale)
+subtitleLabel.Position = UDim2.new(0, 0, 0, 50 * guiScale)
 subtitleLabel.BackgroundTransparency = 1
 subtitleLabel.Text = "discord.gg/22s"
-subtitleLabel.TextColor3 = C.purpleLight
+subtitleLabel.TextColor3 = C.orangeLight
 subtitleLabel.Font = Enum.Font.GothamBold
 subtitleLabel.TextSize = 16 * guiScale
 subtitleLabel.TextXAlignment = Enum.TextXAlignment.Center
@@ -1360,13 +1192,12 @@ rightSide.BackgroundTransparency = 1
 rightSide.BorderSizePixel = 0
 rightSide.ClipsDescendants = true
 rightSide.ZIndex = 2
-
 VisualSetters = {}
 local SliderSetters = {}
 local KeyButtons = {}
 local waitingForKeybind = nil
 
--- CLEAN TOGGLE WITH KEYBIND - No box, just text, key button and switch - SPACED OUT
+-- ORANGE TOGGLE WITH KEYBIND
 local function createToggleWithKey(parent, yPos, labelText, keybindKey, enabledKey, callback, specialColor)
     local row = Instance.new("Frame", parent)
     row.Size = UDim2.new(1, -10 * guiScale, 0, 48 * guiScale)
@@ -1378,7 +1209,7 @@ local function createToggleWithKey(parent, yPos, labelText, keybindKey, enabledK
     local keyBtn = Instance.new("TextButton", row)
     keyBtn.Size = UDim2.new(0, 36 * guiScale, 0, 28 * guiScale)
     keyBtn.Position = UDim2.new(0, 3 * guiScale, 0.5, -14 * guiScale)
-    keyBtn.BackgroundColor3 = C.purple
+    keyBtn.BackgroundColor3 = C.orange
     keyBtn.Text = KEYBINDS[keybindKey].Name
     keyBtn.TextColor3 = Color3.new(1, 1, 1)
     keyBtn.Font = Enum.Font.GothamBold
@@ -1399,7 +1230,7 @@ local function createToggleWithKey(parent, yPos, labelText, keybindKey, enabledK
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.ZIndex = 4
     
-    local onColor = specialColor or C.purple
+    local onColor = specialColor or C.orange
     local defaultOn = Enabled[enabledKey]
     
     local toggleBg = Instance.new("Frame", row)
@@ -1452,7 +1283,7 @@ local function createToggleWithKey(parent, yPos, labelText, keybindKey, enabledK
     return row, enabledKey, function() return isOn end, setVisual, keyBtn
 end
 
--- CLEAN TOGGLE - No box, just text and switch - SPACED OUT
+-- ORANGE TOGGLE WITHOUT KEYBIND
 local function createToggle(parent, yPos, labelText, enabledKey, callback, specialColor)
     local row = Instance.new("Frame", parent)
     row.Size = UDim2.new(1, -10 * guiScale, 0, 48 * guiScale)
@@ -1472,7 +1303,7 @@ local function createToggle(parent, yPos, labelText, enabledKey, callback, speci
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.ZIndex = 4
     
-    local onColor = specialColor or C.purple
+    local onColor = specialColor or C.orange
     local defaultOn = Enabled[enabledKey]
     
     local toggleBg = Instance.new("Frame", row)
@@ -1518,7 +1349,7 @@ local function createToggle(parent, yPos, labelText, enabledKey, callback, speci
     return row, enabledKey, function() return isOn end, setVisual
 end
 
--- CLEAN SLIDER - No box - SPACED OUT
+-- ORANGE SLIDER
 local function createSlider(parent, yPos, labelText, minVal, maxVal, valueKey, callback)
     local container = Instance.new("Frame", parent)
     container.Size = UDim2.new(1, -10 * guiScale, 0, 56 * guiScale)
@@ -1545,7 +1376,7 @@ local function createSlider(parent, yPos, labelText, minVal, maxVal, valueKey, c
     valueInput.Position = UDim2.new(1, -58 * guiScale, 0, 2 * guiScale)
     valueInput.BackgroundColor3 = Color3.fromRGB(20, 15, 30)
     valueInput.Text = tostring(defaultVal)
-    valueInput.TextColor3 = C.purpleLight
+    valueInput.TextColor3 = C.orangeLight
     valueInput.Font = Enum.Font.GothamBold
     valueInput.TextSize = 12 * guiScale
     valueInput.ClearTextOnFocus = false
@@ -1563,7 +1394,7 @@ local function createSlider(parent, yPos, labelText, minVal, maxVal, valueKey, c
     
     local sliderFill = Instance.new("Frame", sliderBg)
     sliderFill.Size = UDim2.new(pct, 0, 1, 0)
-    sliderFill.BackgroundColor3 = C.purple
+    sliderFill.BackgroundColor3 = C.orange
     sliderFill.ZIndex = 5
     Instance.new("UICorner", sliderFill).CornerRadius = UDim.new(1, 0)
     
@@ -1635,8 +1466,7 @@ local function createSlider(parent, yPos, labelText, minVal, maxVal, valueKey, c
     
     return container, setSliderValue
 end
-
--- Left side toggles - SPACED OUT LIKE BEFORE
+-- Left side toggles
 createToggleWithKey(leftSide, 0, "Speed Boost", "SPEED", "SpeedBoost", function(s)
     Enabled.SpeedBoost = s
     if s then startSpeedBoost() else stopSpeedBoost() end
@@ -1675,13 +1505,13 @@ end, C.danger)
 createToggle(leftSide, 484, "Galaxy Sky Bright", "GalaxySkyBright", function(s)
     Enabled.GalaxySkyBright = s
     if s then enableGalaxySkyBright() else disableGalaxySkyBright() end
-end, Color3.fromRGB(180, 80, 255))
+end, Color3.fromRGB(255, 140, 0))
 
--- Right side toggles - SPACED OUT LIKE BEFORE
+-- Right side toggles
 createToggleWithKey(rightSide, 0, "Galaxy Mode", "GALAXY", "Galaxy", function(s)
     Enabled.Galaxy = s
     if s then startGalaxy() else stopGalaxy() end
-end, Color3.fromRGB(60, 130, 255))
+end, C.orange)
 _G.setGalaxyVisual = VisualSetters.Galaxy
 
 createSlider(rightSide, 52, "Gravity %", 25, 130, "GalaxyGravityPercent", function(v)
@@ -1712,21 +1542,21 @@ createToggleWithKey(rightSide, 388, "Auto Left", "AUTOLEFT", "AutoWalkEnabled", 
     AutoWalkEnabled = s
     Enabled.AutoWalkEnabled = s
     if s then startAutoWalk() else stopAutoWalk() end
-end, Color3.fromRGB(100, 150, 255))
+end, C.orange)
 _G.setAutoLeftVisual = VisualSetters.AutoWalkEnabled
 
 createToggleWithKey(rightSide, 440, "Auto Right", "AUTORIGHT", "AutoRightEnabled", function(s)
     AutoRightEnabled = s
     Enabled.AutoRightEnabled = s
     if s then startAutoRight() else stopAutoRight() end
-end, Color3.fromRGB(100, 220, 180))
+end, C.orange)
 _G.setAutoRightVisual = VisualSetters.AutoRightEnabled
 
 -- Save Button
 local SaveBtn = Instance.new("TextButton", rightSide)
 SaveBtn.Size = UDim2.new(1, -10 * guiScale, 0, 50 * guiScale)
 SaveBtn.Position = UDim2.new(0, 5 * guiScale, 0, 503 * guiScale)
-SaveBtn.BackgroundColor3 = C.purple
+SaveBtn.BackgroundColor3 = C.orange
 SaveBtn.Text = "SAVE CONFIG"
 SaveBtn.TextColor3 = Color3.new(1, 1, 1)
 SaveBtn.Font = Enum.Font.GothamBold
@@ -1745,7 +1575,7 @@ SaveBtn.MouseButton1Click:Connect(function()
     end
     task.delay(1.5, function()
         SaveBtn.Text = "SAVE CONFIG"
-        SaveBtn.BackgroundColor3 = C.purple
+        SaveBtn.BackgroundColor3 = C.orange
     end)
 end)
 
@@ -1761,18 +1591,16 @@ infoLabel.ZIndex = 3
 
 local guiVisible = true
 
--- Apply loaded config (delayed to prevent character reset)
+-- Apply loaded config
 task.spawn(function()
-    task.wait(3) -- Wait longer to ensure character is fully loaded and physics settled
+    task.wait(3)
     
-    -- Make sure character exists
     local c = Player.Character
     if not c or not c:FindFirstChild("HumanoidRootPart") then
         c = Player.CharacterAdded:Wait()
         task.wait(1)
     end
     
-    -- Update keybind buttons
     for key, btn in pairs(KeyButtons) do
         if btn and KEYBINDS[key] then
             btn.Text = KEYBINDS[key].Name
@@ -1791,7 +1619,6 @@ task.spawn(function()
         end
     end
     
-    -- Start features that don't affect physics first
     if Enabled.AntiRagdoll then startAntiRagdoll() end
     if Enabled.AutoSteal then startAutoSteal() end
     if Enabled.Optimizer then enableOptimizer() end
@@ -1799,7 +1626,6 @@ task.spawn(function()
     
     task.wait(0.5)
     
-    -- Then start physics features
     if Enabled.SpeedBoost then startSpeedBoost() end
     if Enabled.SpinBot then startSpinBot() end
     if Enabled.SpamBat then startSpamBat() end
@@ -1809,17 +1635,12 @@ task.spawn(function()
     if Enabled.Unwalk then startUnwalk() end
     if Enabled.AutoWalkEnabled then AutoWalkEnabled = true startAutoWalk() end
     if Enabled.AutoRightEnabled then AutoRightEnabled = true startAutoRight() end
-    
-    if configLoaded then
-        -- Config loaded silently
-    end
 end)
 
 -- Input handling
 UserInputService.InputBegan:Connect(function(input, gpe)
     if gpe then return end
     
-    -- Handle keybind changes
     if waitingForKeybind and input.KeyCode ~= Enum.KeyCode.Unknown then
         local k = input.KeyCode
         KEYBINDS[waitingForKeybind] = k
@@ -1899,3 +1720,5 @@ Player.CharacterAdded:Connect(function()
     if Enabled.BatAimbot then stopBatAimbot() task.wait(0.1) startBatAimbot() end
     if Enabled.Unwalk then startUnwalk() end
 end)
+
+print("✅ SSS HUB Loaded Successfully!")
